@@ -1,14 +1,15 @@
 import { configureStore } from '@reduxjs/toolkit';
-import {apiSlice} from "./apiSlice";
-import postReducer from "./post/postSlice";
-import authReducer from "./auth/authSlice";
+import { apiSlice } from './apiSlice';
+import authReducer from './auth/authSlice';
+
 export const store = configureStore({
-    reducer: {   
-      post: postReducer,
-      auth: authReducer,
-      [apiSlice.reducerPath]: apiSlice.reducer,     
+    reducer: {
+        [apiSlice.reducerPath]: apiSlice.reducer,
+        auth: authReducer,
     },
-    devTools: import.meta.env.NODE_ENV !== 'production',
-    middleware: (getDefaultMiddlewares) => getDefaultMiddlewares().concat(apiSlice.middleware),
-  });
-  
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware().concat(apiSlice.middleware),
+});
+
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;

@@ -1,25 +1,36 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
+import { useDispatch } from 'react-redux';
+import { useLoginMutation, useRegisterMutation } from '../features/apiSlice';
+import { setCredentials } from '../features/auth/authSlice';
 
 const Auth: React.FC = () => {
     const [isLogin, setIsLogin] = useState(true);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
+    const dispatch = useDispatch();
+
+    const [login, { isLoading: isLoginLoading }] = useLoginMutation();
+    const [register, { isLoading: isRegisterLoading }] = useRegisterMutation();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const endpoint = isLogin ? '/auth/login' : '/auth/register';
-            const { data } = await api.post(endpoint, { username, password });
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
+            const credentials = { username, password };
+            const userData = isLogin 
+                ? await login(credentials).unwrap() 
+                : await register(credentials).unwrap();
+
+            dispatch(setCredentials(userData));
             navigate('/');
         } catch (error) {
+            console.error('Authentication failed:', error);
             alert('Authentication failed');
         }
     };
+
+    const isLoading = isLoginLoading || isRegisterLoading;
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -50,9 +61,12 @@ const Auth: React.FC = () => {
                     </div>
                     <button
                         type="submit"
-                        className="w-full px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-700 focus:outline-none focus:shadow-outline"
+                        disabled={isLoading}
+                        className={`w-full px-4 py-2 font-bold text-white rounded focus:outline-none focus:shadow-outline ${
+                            isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700'
+                        }`}
                     >
-                        {isLogin ? 'Login' : 'Register'}
+                        {isLoading ? 'Processing...' : (isLogin ? 'Login' : 'Register')}
                     </button>
                 </form>
                 <p className="mt-4 text-center text-gray-600">

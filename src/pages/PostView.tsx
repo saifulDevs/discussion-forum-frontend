@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import api from '../api';
+import { useSelector } from 'react-redux';
 import OperationForm from '../components/OperationForm';
+import { useGetPostQuery } from '../features/apiSlice';
+import { RootState } from '../features/store';
 
 interface Operation {
     _id: string;
@@ -24,65 +26,71 @@ interface RootPost {
 
 const PostView: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const [post, setPost] = useState<RootPost | null>(null);
-    const [operations, setOperations] = useState<Operation[]>([]);
+    const { data, isLoading, error } = useGetPostQuery(id || '');
     const [replyingTo, setReplyingTo] = useState<string | null>(null); // null for root, or opId
-    const user = localStorage.getItem('user');
+    const user = useSelector((state: RootState) => state.auth.user);
 
-    useEffect(() => {
-        fetchPostData();
-    }, [id]);
+    const post: RootPost | undefined = data?.post;
+    const operations: Operation[] = data?.operations || [];
 
-    const fetchPostData = async () => {
-        try {
-            const { data } = await api.get(`/posts/${id}`);
-            setPost(data.post);
-            setOperations(data.operations);
-            setReplyingTo(null);
-        } catch (error) {
-            console.error('Error fetching post:', error);
-        }
-    };
+    // Optimize tree construction: O(N) instead of O(N^2)
+    const operationsMap = React.useMemo(() => {
+        const map = new Map<string | null, Operation[]>();
+        operations.forEach(op => {
+            const parentId = op.parentOpId || null;
+            if (!map.has(parentId)) {
+                map.set(parentId, []);
+            }
+            map.get(parentId)!.push(op);
+        });
+        return map;
+    }, [operations]);
 
-    const buildTree = (parentId: string | null) => {
-        return operations
-            .filter((op) => (op.parentOpId || null) === parentId)
-            .map((op) => (
-                <div key={op._id} className="pl-4 mt-4 ml-4 border-l-2 border-gray-200">
-                    <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-gray-800">
-                            {op.opType === 'add' && '+'}
-                            {op.opType === 'sub' && '-'}
-                            {op.opType === 'mul' && '×'}
-                            {op.opType === 'div' && '÷'}
-                            {op.rightNumber} = <span className="text-blue-600">{op.resultNumber}</span>
-                        </span>
-                        <span className="text-xs text-gray-500">
-                            by {op.userId?.username}
-                        </span>
-                        {user && (
-                            <button
-                                onClick={() => setReplyingTo(op._id)}
-                                className="text-xs text-blue-500 hover:underline focus:outline-none"
-                            >
-                                Reply
-                            </button>
-                        )}
-                    </div>
-                    {replyingTo === op._id && (
-                        <OperationForm
-                            rootPostId={post!._id}
-                            parentOpId={op._id}
-                            onOperationAdded={fetchPostData}
-                            onCancel={() => setReplyingTo(null)}
-                        />
+    const renderTree = (parentId: string | null) => {
+        const children = operationsMap.get(parentId);
+        if (!children) return null;
+
+        return children.map((op) => (
+            <div key={op._id} className="pl-4 mt-4 ml-4 border-l-2 border-gray-200">
+                <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-gray-800">
+                        {op.leftNumber}
+                        {' '}
+                        {op.opType === 'add' && '+'}
+                        {op.opType === 'sub' && '-'}
+                        {op.opType === 'mul' && '×'}
+                        {op.opType === 'div' && '÷'}
+                        {' '}
+                        {op.rightNumber} = <span className="text-blue-600">{op.resultNumber}</span>
+                    </span>
+                    <span className="text-xs text-gray-500">
+                        by {op.userId?.username}
+                    </span>
+                    {user && (
+                        <button
+                            onClick={() => setReplyingTo(op._id)}
+                            className="text-xs text-blue-500 hover:underline focus:outline-none"
+                        >
+                            Reply
+                        </button>
                     )}
-                    {buildTree(op._id)}
                 </div>
-            ));
+                {replyingTo === op._id && (
+                    <OperationForm
+                        rootPostId={post!._id}
+                        parentOpId={op._id}
+                        onOperationAdded={() => setReplyingTo(null)}
+                        onCancel={() => setReplyingTo(null)}
+                    />
+                )}
+                {renderTree(op._id)}
+            </div>
+        ));
     };
 
-    if (!post) return <div className="p-8 text-center">Loading...</div>;
+    if (isLoading) return <div className="p-8 text-center">Loading...</div>;
+    if (error) return <div className="p-8 text-center text-red-500">Error loading discussion</div>;
+    if (!post) return <div className="p-8 text-center">Post not found</div>;
 
     return (
         <div className="container px-4 py-8 mx-auto">
@@ -106,11 +114,11 @@ const PostView: React.FC = () => {
                     {replyingTo === 'root' && (
                         <OperationForm
                             rootPostId={post._id}
-                            onOperationAdded={fetchPostData}
+                            onOperationAdded={() => setReplyingTo(null)} // RTK Query handles cache invalidation
                             onCancel={() => setReplyingTo(null)}
                         />
                     )}
-                    {buildTree(null)}
+                    {renderTree(null)}
                 </div>
             </div>
         </div>

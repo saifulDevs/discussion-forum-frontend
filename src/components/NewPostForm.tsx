@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from '../api';
+import { useCreateRootMutation } from '../features/apiSlice';
 
 interface Props {
     onPostCreated: (post: any) => void;
@@ -7,16 +7,18 @@ interface Props {
 
 const NewPostForm: React.FC<Props> = ({ onPostCreated }) => {
     const [startNumber, setStartNumber] = useState<number | ''>('');
+    const [createRoot, { isLoading }] = useCreateRootMutation();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (startNumber === '') return;
 
         try {
-            const { data } = await api.post('/posts', { startNumber: Number(startNumber) });
+            const data = await createRoot({ startNumber: Number(startNumber) }).unwrap();
             onPostCreated(data);
             setStartNumber('');
         } catch (error) {
+            console.error('Failed to create post:', error);
             alert('Failed to create post');
         }
     };
@@ -36,9 +38,12 @@ const NewPostForm: React.FC<Props> = ({ onPostCreated }) => {
             </div>
             <button
                 type="submit"
-                className="px-4 py-2 font-bold text-white bg-green-500 rounded hover:bg-green-700 focus:outline-none focus:shadow-outline"
+                disabled={isLoading}
+                className={`px-4 py-2 font-bold text-white rounded focus:outline-none focus:shadow-outline ${
+                    isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-700'
+                }`}
             >
-                Create Post
+                {isLoading ? 'Creating...' : 'Create Post'}
             </button>
         </form>
     );

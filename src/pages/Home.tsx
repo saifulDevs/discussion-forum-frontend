@@ -1,34 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import api from '../api';
+import { useSelector } from 'react-redux';
 import NewPostForm from '../components/NewPostForm';
+import { useGetRootsQuery } from '../features/apiSlice';
+import { RootState } from '../features/store';
 
 const Home: React.FC = () => {
-    const [posts, setPosts] = useState<any[]>([]);
-    const user = localStorage.getItem('user');
+    const { data: posts = [], isLoading, error } = useGetRootsQuery();
+    const user = useSelector((state: RootState) => state.auth.user);
 
-    useEffect(() => {
-        fetchPosts();
-    }, []);
-
-    const fetchPosts = async () => {
-        try {
-            const { data } = await api.get('/posts');
-            setPosts(data);
-        } catch (error) {
-            console.error('Error fetching posts:', error);
-        }
-    };
-
-    const handlePostCreated = (newPost: any) => {
-        setPosts([newPost, ...posts]);
-    };
+    if (isLoading) return <div className="p-8 text-center">Loading...</div>;
+    if (error) return <div className="p-8 text-center text-red-500">Error loading posts</div>;
 
     return (
         <div className="container px-4 py-8 mx-auto">
             <h1 className="mb-8 text-3xl font-bold text-center text-gray-900">Number Discussions</h1>
             {user ? (
-                <NewPostForm onPostCreated={handlePostCreated} />
+                <NewPostForm onPostCreated={() => {}} /> // RTK Query handles cache invalidation
             ) : (
                 <p className="mb-8 text-center text-gray-600">
                     <Link to="/auth" className="text-blue-500 hover:underline">Login</Link> to create a post.

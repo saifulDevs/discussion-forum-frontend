@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from '../api';
+import { useAddOperationMutation } from '../features/apiSlice';
 
 interface Props {
     rootPostId: string;
@@ -11,19 +11,22 @@ interface Props {
 const OperationForm: React.FC<Props> = ({ rootPostId, parentOpId, onOperationAdded, onCancel }) => {
     const [opType, setOpType] = useState('add');
     const [rightNumber, setRightNumber] = useState<number | ''>('');
+    const [addOperation, { isLoading }] = useAddOperationMutation();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (rightNumber === '') return;
 
         try {
-            await api.post(`/posts/${rootPostId}/operations`, {
+            await addOperation({
+                id: rootPostId,
                 parentOpId,
                 opType,
                 rightNumber: Number(rightNumber),
-            });
+            }).unwrap();
             onOperationAdded();
         } catch (error) {
+            console.error('Failed to add operation:', error);
             alert('Failed to add operation');
         }
     };
@@ -51,15 +54,19 @@ const OperationForm: React.FC<Props> = ({ rootPostId, parentOpId, onOperationAdd
                         value={rightNumber}
                         onChange={(e) => setRightNumber(Number(e.target.value))}
                         className="w-24 px-3 py-2 border rounded shadow focus:outline-none focus:shadow-outline"
+                        placeholder="Enter number"
                         required
                     />
                 </div>
                 <div className="flex gap-2">
                     <button
                         type="submit"
-                        className="px-4 py-2 font-bold text-white bg-green-500 rounded hover:bg-green-700 focus:outline-none focus:shadow-outline"
+                        disabled={isLoading}
+                        className={`px-4 py-2 font-bold text-white rounded focus:outline-none focus:shadow-outline ${
+                            isLoading ? 'bg-green-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-700'
+                        }`}
                     >
-                        Calculate
+                        {isLoading ? 'Calculating...' : 'Calculate'}
                     </button>
                     <button
                         type="button"
