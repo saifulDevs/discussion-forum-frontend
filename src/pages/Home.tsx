@@ -26,7 +26,7 @@ const Home: React.FC = () => {
                 {posts.map((post) => (
                     <div key={post._id} className="p-6 transition-shadow bg-white rounded-lg shadow hover:shadow-lg">
                         <h3 className="mb-2 text-xl font-bold text-gray-800">
-                            Starting Number: {post.startNumber}
+                            Title: {post.title}
                         </h3>
                         <p className="mb-4 text-sm text-gray-600">Posted by: {post.userId?.username || 'Unknown'}</p>
                         <Link

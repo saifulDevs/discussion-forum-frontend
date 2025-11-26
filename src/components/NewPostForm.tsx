@@ -1,51 +1,59 @@
 import React, { useState } from 'react';
 import { useCreateRootMutation } from '../features/apiSlice';
 
-interface Props {
-    onPostCreated: (post: any) => void;
-}
-
-const NewPostForm: React.FC<Props> = ({ onPostCreated }) => {
-    const [startNumber, setStartNumber] = useState<number | ''>('');
+const NewPostForm: React.FC = () => {
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
     const [createRoot, { isLoading }] = useCreateRootMutation();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (startNumber === '') return;
-
         try {
-            const data = await createRoot({ startNumber: Number(startNumber) }).unwrap();
-            onPostCreated(data);
-            setStartNumber('');
+            await createRoot({ title, content }).unwrap();
+            setTitle('');
+            setContent('');
         } catch (error) {
             console.error('Failed to create post:', error);
-            alert('Failed to create post');
         }
     };
 
     return (
-        <form onSubmit={handleSubmit} className="p-6 mb-6 bg-white rounded-lg shadow-md">
-            <h3 className="mb-4 text-xl font-semibold text-gray-800">Start a new discussion</h3>
-            <div className="mb-4">
-                <label className="block mb-2 text-sm font-bold text-gray-700">Starting Number:</label>
-                <input
-                    type="number"
-                    value={startNumber}
-                    onChange={(e) => setStartNumber(Number(e.target.value))}
-                    className="w-full px-3 py-2 leading-tight text-gray-700 border rounded shadow appearance-none focus:outline-none focus:shadow-outline"
-                    required
-                />
-            </div>
-            <button
-                type="submit"
-                disabled={isLoading}
-                className={`px-4 py-2 font-bold text-white rounded focus:outline-none focus:shadow-outline ${
-                    isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-500 hover:bg-green-700'
-                }`}
-            >
-                {isLoading ? 'Creating...' : 'Create Post'}
-            </button>
-        </form>
+        <div className="p-4 mb-8 bg-white rounded shadow">
+            <h2 className="mb-4 text-xl font-bold">Start a New Discussion</h2>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div>
+                    <label className="block mb-1 text-sm font-bold text-gray-700">Title</label>
+                    <input
+                        type="text"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        className="w-full px-3 py-2 border rounded shadow focus:outline-none focus:shadow-outline"
+                        placeholder="Discussion Title"
+                        required
+                    />
+                </div>
+                <div>
+                    <label className="block mb-1 text-sm font-bold text-gray-700">Content</label>
+                    <textarea
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        className="w-full px-3 py-2 border rounded shadow focus:outline-none focus:shadow-outline"
+                        placeholder="What's on your mind?"
+                        rows={3}
+                        required
+                    />
+                </div>
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className={`px-4 py-2 font-bold text-white rounded focus:outline-none focus:shadow-outline ${
+                        isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-700'
+                    }`}
+                >
+                    {isLoading ? 'Creating...' : 'Create Discussion'}
+                </button>
+            </form>
+        </div>
     );
 };
 
