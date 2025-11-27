@@ -14,7 +14,7 @@ const CommentNode: React.FC<Props> = ({ node, parentValue, onReply, children }) 
     const { user } = useSelector((state: RootState) => state.auth);
     const [deleteNode, { isLoading: isDeleting }] = useDeleteNodeMutation();
 
-    const isCreator = user?.id === node.userId.id;
+
 
     const handleDelete = async () => {
         if (window.confirm('Are you sure you want to delete this node? This will also delete all its children.')) {
@@ -42,7 +42,7 @@ const CommentNode: React.FC<Props> = ({ node, parentValue, onReply, children }) 
     return (
         <div className="flex flex-col gap-4">
             <div className="flex items-start p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <div className="flex-grow">
+                <div className="grow">
                     <div className="flex items-center justify-between">
                         <div className="text-gray-800">{renderComputation()}</div>
                         <div className="text-xs text-gray-500">by @{node.userId.username}</div>
@@ -53,7 +53,7 @@ const CommentNode: React.FC<Props> = ({ node, parentValue, onReply, children }) 
                             Reply
                         </button>
                         )}
-                        {isCreator && (
+                        {user?.id === node?.userId?._id &&  user && (
                             <button
                                 onClick={handleDelete}
                                 disabled={isDeleting}
