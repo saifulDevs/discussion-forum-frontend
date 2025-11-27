@@ -6,26 +6,17 @@ export interface User {
     username: string;
 }
 
-export interface RootPost {
+export type Operation = '+' | '-' | '*' | '/';
+
+export interface ComputationNode {
     _id: string;
-    title: string;
-    content: string;
+    parentId: string | null;
+    operation: Operation | null;
+    rightNumber: number | null;
+    value: number;
     userId: User;
     createdAt: string;
-}
-
-export interface Comment {
-    _id: string;
-    rootPostId: string;
-    parentId?: string;
-    userId: User;
-    content: string;
-    createdAt: string;
-}
-
-export interface PostResponse {
-    post: RootPost;
-    comments: Comment[];
+    children: ComputationNode[];
 }
 
 export const apiSlice = createApi({
@@ -40,7 +31,7 @@ export const apiSlice = createApi({
             return headers;
         },
     }),
-    tagTypes: ['Post', 'RootPosts'],
+    tagTypes: ['Node'],
     endpoints: (builder) => ({
         login: builder.mutation<{ token: string; user: User }, any>({
             query: (credentials) => ({
@@ -56,29 +47,42 @@ export const apiSlice = createApi({
                 body: credentials,
             }),
         }),
-        getRoots: builder.query<RootPost[], void>({
-            query: () => '/posts',
-            providesTags: ['RootPosts'],
+        getTree: builder.query<ComputationNode[], void>({
+            query: () => '/nodes',
+            providesTags: (result) =>
+                result
+                    ? [...result.map(({ _id }) => ({ type: 'Node' as const, id: _id })), { type: 'Node', id: 'LIST' }]
+                    : [{ type: 'Node', id: 'LIST' }],
         }),
-        getPost: builder.query<PostResponse, string>({
-            query: (id) => `/posts/${id}`,
-            providesTags: (result, error, id) => [{ type: 'Post', id }],
+        getNode: builder.query<ComputationNode, string>({
+            query: (id) => `/nodes/${id}`,
+            providesTags: (result, error, id) => [{ type: 'Node', id }],
         }),
-        createRoot: builder.mutation<RootPost, { title: string; content: string }>({
+        createRoot: builder.mutation<ComputationNode, { value: number }>({
             query: (body) => ({
-                url: '/posts',
+                url: '/nodes',
                 method: 'POST',
                 body,
             }),
-            invalidatesTags: ['RootPosts'],
+            invalidatesTags: [{ type: 'Node', id: 'LIST' }],
         }),
-        addComment: builder.mutation<Comment, { id: string; parentId?: string; content: string }>({
-            query: ({ id, ...body }) => ({
-                url: `/posts/${id}/comments`,
+        createReply: builder.mutation<
+            ComputationNode,
+            { parentId: string; operation: Operation; rightNumber: number }
+        >({
+            query: ({ parentId, ...body }) => ({
+                url: `/nodes/${parentId}`,
                 method: 'POST',
                 body,
             }),
-            invalidatesTags: (result, error, { id }) => [{ type: 'Post', id }],
+            invalidatesTags: (result, error, { parentId }) => [{ type: 'Node', id: parentId }],
+        }),
+        deleteNode: builder.mutation<void, string>({
+            query: (id) => ({
+                url: `/nodes/${id}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: (result, error, id) => [{ type: 'Node', id: 'LIST' }, { type: 'Node', id }],
         }),
     }),
 });
@@ -86,8 +90,9 @@ export const apiSlice = createApi({
 export const {
     useLoginMutation,
     useRegisterMutation,
-    useGetRootsQuery,
-    useGetPostQuery,
+    useGetTreeQuery,
+    useGetNodeQuery,
     useCreateRootMutation,
-    useAddCommentMutation,
+    useCreateReplyMutation,
+    useDeleteNodeMutation,
 } = apiSlice;

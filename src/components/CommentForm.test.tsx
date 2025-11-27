@@ -19,23 +19,23 @@ describe('CommentForm', () => {
     it('renders correctly', () => {
         render(
             <Provider store={mockStore}>
-                <CommentForm rootPostId="root1" onCommentAdded={() => {}} onCancel={() => {}} />
+                <CommentForm parentId="root1" onReplyAdded={() => {}} onCancel={() => {}} />
             </Provider>
         );
-        expect(screen.getByPlaceholderText('Write a reply...')).toBeInTheDocument();
-        expect(screen.getByText('Post Reply')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Enter a number')).toBeInTheDocument();
+        expect(screen.getByText('Add Reply')).toBeInTheDocument();
         expect(screen.getByText('Cancel')).toBeInTheDocument();
     });
 
     it('updates input value', () => {
         render(
             <Provider store={mockStore}>
-                <CommentForm rootPostId="root1" onCommentAdded={() => {}} onCancel={() => {}} />
+                <CommentForm parentId="root1" onReplyAdded={() => {}} onCancel={() => {}} />
             </Provider>
         );
 
-        const input = screen.getByPlaceholderText('Write a reply...');
-        fireEvent.change(input, { target: { value: 'Hello World' } });
-        expect(input).toHaveValue('Hello World');
+        const input = screen.getByPlaceholderText('Enter a number');
+        fireEvent.change(input, { target: { value: '123' } });
+        expect(input).toHaveValue(123);
     });
 });

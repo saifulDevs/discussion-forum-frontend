@@ -1,60 +1,72 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
+import { ComputationNode as ComputationNodeType, useDeleteNodeMutation } from '../features/apiSlice';
+import { RootState } from '../features/store';
 
 interface Props {
-    username: string;
-    content: React.ReactNode;
-    date: string;
-    onReply?: () => void;
+    node: ComputationNodeType;
+    parentValue?: number;
+    onReply: () => void;
     children?: React.ReactNode;
 }
 
-const CommentNode: React.FC<Props> = ({ username, content, date, onReply, children }) => {
+const CommentNode: React.FC<Props> = ({ node, parentValue, onReply, children }) => {
+    const { user } = useSelector((state: RootState) => state.auth);
+    const [deleteNode, { isLoading: isDeleting }] = useDeleteNodeMutation();
+
+    const isCreator = user?.id === node.userId._id;
+
+    const handleDelete = async () => {
+        if (window.confirm('Are you sure you want to delete this node? This will also delete all its children.')) {
+            try {
+                await deleteNode(node._id).unwrap();
+            } catch (error) {
+                console.error('Failed to delete node:', error);
+                alert('Failed to delete node.');
+            }
+        }
+    };
+
+    const renderComputation = () => {
+        if (node.parentId === null) {
+            return <span className="text-2xl font-bold">{node.value}</span>;
+        }
+        return (
+            <span className="text-lg">
+                {parentValue} {node.operation} {node.rightNumber} ={' '}
+                <span className="font-bold">{node.value}</span>
+            </span>
+        );
+    };
+
     return (
         <div className="flex flex-col gap-4">
-            <div className="flex border border-gray-300 bg-white">
-                {/* Left: Avatar & Name */}
-                <div className="w-24 flex-shrink-0 flex flex-col items-center p-4 border-r border-gray-300">
-                    <div className="w-16 h-16 bg-gray-200 mb-2 overflow-hidden">
-                        <svg className="w-full h-full text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
+            <div className="flex items-start p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+                <div className="flex-grow">
+                    <div className="flex items-center justify-between">
+                        <div className="text-gray-800">{renderComputation()}</div>
+                        <div className="text-xs text-gray-500">by @{node.userId.username}</div>
                     </div>
-                    <span className="text-sm font-medium text-gray-900 break-all text-center">{username}</span>
-                </div>
-
-                {/* Right: Content */}
-                <div className="flex-grow p-4 flex flex-col">
-                    <div className="text-xs text-orange-400 mb-4">
-                        {new Date(date).toLocaleString('ru-RU', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        }).replace(',', ' в')}
-                    </div>
-                    
-                    <div className="text-gray-800 text-sm mb-4 flex-grow">
-                        {content}
-                    </div>
-
-                    {onReply && (
-                        <button 
-                            onClick={onReply}
-                            className="text-purple-700 hover:underline text-sm self-start font-medium"
-                        >
+                    <div className="flex items-center gap-4 mt-2">
+                        {user && (
+                        <button onClick={onReply} className="text-sm font-medium text-blue-600 hover:underline">
                             Reply
                         </button>
-                    )}
+                        )}
+                        {isCreator && (
+                            <button
+                                onClick={handleDelete}
+                                disabled={isDeleting}
+                                className="text-sm font-medium text-red-600 hover:underline disabled:text-gray-400"
+                            >
+                                {isDeleting ? 'Deleting...' : 'Delete'}
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
-            
-            {/* Nested Children */}
-            {children && (
-                <div className="pl-8 md:pl-12">
-                    {children}
-                </div>
-            )}
+
+            {children && <div className="pl-8 border-l-2 border-gray-200">{children}</div>}
         </div>
     );
 };
