@@ -40,7 +40,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             >
                 View Computation
             </Link>
-            {user && user.id === post.userId?._id && (
+            {user && user.id === post.userId?.id && (
                     <button
                         onClick={handleDelete}
                         disabled={isDeleting}

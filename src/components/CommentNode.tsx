@@ -14,7 +14,7 @@ const CommentNode: React.FC<Props> = ({ node, parentValue, onReply, children }) 
     const { user } = useSelector((state: RootState) => state.auth);
     const [deleteNode, { isLoading: isDeleting }] = useDeleteNodeMutation();
 
-    const isCreator = user?.id === node.userId._id;
+    const isCreator = user?.id === node.userId.id;
 
     const handleDelete = async () => {
         if (window.confirm('Are you sure you want to delete this node? This will also delete all its children.')) {

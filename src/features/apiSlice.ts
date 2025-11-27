@@ -56,7 +56,7 @@ export const apiSlice = createApi({
         }),
         getNode: builder.query<ComputationNode, string>({
             query: (id) => `/nodes/${id}`,
-            providesTags: (result, error, id) => [{ type: 'Node', id }],
+            providesTags: (_result, _error, id) => [{ type: 'Node', id }],
         }),
         createRoot: builder.mutation<ComputationNode, { value: number }>({
             query: (body) => ({
@@ -75,14 +75,14 @@ export const apiSlice = createApi({
                 method: 'POST',
                 body,
             }),
-            invalidatesTags: (result, error, { parentId }) => [{ type: 'Node', id: parentId }],
+            invalidatesTags: (_result, _error, { parentId }) => [{ type: 'Node', id: parentId }],
         }),
         deleteNode: builder.mutation<void, string>({
             query: (id) => ({
                 url: `/nodes/${id}`,
                 method: 'DELETE',
             }),
-            invalidatesTags: (result, error, id) => [{ type: 'Node', id: 'LIST' }, { type: 'Node', id }],
+            invalidatesTags: (_result, _error, id) => [{ type: 'Node', id: 'LIST' }, { type: 'Node', id }],
         }),
     }),
 });
